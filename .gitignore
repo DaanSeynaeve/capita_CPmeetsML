@@ -1,2 +1,7 @@
 *.pyc
+<<<<<<< HEAD
 *.cmd
+=======
+*.project
+*.pydevproject
+>>>>>>> 2ccde3e92c14966789fba8ab913168e776c576bb
