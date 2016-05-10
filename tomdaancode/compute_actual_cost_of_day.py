@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 MZNSOLUTIONBASENAME = "minizinc.out"
 
 import sys
@@ -15,7 +14,7 @@ import datetime
 
 runcheck = __import__('mzn-runcheck')
 cwd=os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(cwd,'scripts'))
+sys.path.append(os.path.join(cwd,'../scripts'))
 from checker import *
 import instance2dzn as i2dzn
 import forecast2dzn as f2dzn
@@ -23,8 +22,6 @@ import checker_mzn as chkmzn
 from prices_data import *
 from prices_regress import *
 import numpy as np
-# if you don't have sklearn installed, here is a tip from Lieven Paulissen for windows users: "I installed the python wheels using the pip command, especially numpy and matplotlib, from here: http://www.lfd.uci.edu/~gohlke/pythonlibs."
-from sklearn import linear_model
 
 # from http://code.activestate.com/recipes/577932-flatten-arraytuple/
 def _qflatten(L,a,I):
@@ -35,6 +32,38 @@ def qflatten(L):
     R = []
     _qflatten(L,R.append,(list,tuple,np.ndarray))
     return np.array(R)
+
+
+import sklearn.linear_model as linear_model
+
+def evaluate_model(weights,features,prices,tasks,args):
+    clf = linear_model.LogisticRegression()
+    clf.coef_ = weights[:-1]
+    clf.intercept_ = weights[-1]
+    forecasts = clf.predict(features)
+    return compute_actual_cost_of_day(forecasts,prices,tasks,args)
+
+
+def compute_actual_cost_of_day(forecasts,prices,tasks,args):
+    (timings,out) = runcheck.mzn_run(args.file_mzn, tasks, forecasts,
+                            args.tmp, mzn_dir=args.mzn_dir,
+                            print_output=args.print_output,
+                            verbose=args.v-1)
+    instance = runcheck.mzn_toInstance(tasks, out, forecasts,
+                              data_actual=prices,
+                              pretty_print=args.print_pretty,
+                              verbose=args.v-1)
+    instance.compute_costs()
+    return instance.day.cj_act
+
+
+
+
+
+
+
+
+
 
 
 ## the prototype to run
@@ -88,27 +117,9 @@ def run(f_instances, day, dat, args=None):
     for (i,f) in enumerate(f_instances):
         data_forecasts = preds[i]
         data_actual = actuals[i]
-        (timing, out) = runcheck.mzn_run(args.file_mzn, f, data_forecasts,
-                                tmpdir, mzn_dir=args.mzn_dir,
-                                print_output=args.print_output,
-                                verbose=args.v-1)
-        instance = runcheck.mzn_toInstance(f, out, data_forecasts,
-                                  data_actual=data_actual,
-                                  pretty_print=args.print_pretty,
-                                  verbose=args.v-1)
-        triples.append( (f, str(days[i]), instance) )
-        if args.v >= 1:
-            # csv print:
-            if i == 0:
-                # an ugly hack, print more suited header here
-                print "scheduling_scenario; date; cost_forecast; cost_actual; runtime"
-            today = day + timedelta(i)
-            chkmzn.print_instance_csv(f, today.__str__(), instance, timing=timing, header=False)
 
-    return triples
-
-    if not args.tmp_keep:
-        shutil.rmtree(tmpdir)
+        x = compute_actual_cost_of_day(data_forecasts,data_actual,f,args)
+        print "Cost of day", i, x
 
 
 if __name__ == '__main__':
@@ -137,7 +148,7 @@ if __name__ == '__main__':
         f_instances = sorted(glob.glob(globpatt))
 
     # data instance prepping
-    datafile = 'data/prices2013.dat';
+    datafile = '../data/prices2013.dat';
     dat = load_prices(datafile)
     day = None
     if args.day:
@@ -149,15 +160,4 @@ if __name__ == '__main__':
 
 
     # do predictions and get schedule instances
-    time_start = ttime.time()
-    triples = run(f_instances, day, dat, args=args)
-    runtime = (ttime.time() - time_start)
-
-
-    # compute total actual cost (and time)
-    tot_act = 0
-    for (f,day,instance) in triples:
-        instance.compute_costs()
-        tot_act += instance.day.cj_act
-
-    print "%s from %s, linear: total actual cost: %.1f (runtime: %.2f)"%(args.file_instance, day, tot_act, runtime)
+    run(f_instances, day, dat, args=args)
