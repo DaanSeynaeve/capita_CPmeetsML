@@ -14,7 +14,7 @@ import glob
 
 
 cwd=os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(cwd,'scripts'))
+sys.path.append(os.path.join(cwd,'../scripts'))
 from checker import *
 import instance2dzn as i2dzn
 import forecast2dzn as f2dzn
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     parser.add_argument("--print-output", help="print the output of minizinc", action="store_true")
     parser.add_argument("--tmp-keep", help="keep created temp subdir", action="store_true")
     args = parser.parse_args()
-    
+
     # if you want to hardcode the MiniZincIDE path for the binaries, here is a resonable place to do that
     #args.mzn_dir = "/home/tias/local/src/MiniZincIDE-2.0.13-bundle-linux-x86_64"
 
