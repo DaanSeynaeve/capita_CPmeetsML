@@ -14,7 +14,10 @@ import datetime
 
 import sklearn.linear_model as linear_model
 import numpy as np
-runcheck = __import__('mzn-runcheck')
+try:
+    runcheck = __import__('mzn-runcheck')
+except Exception:
+    print("meh")
 cwd=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(cwd,'../scripts'))
 
