@@ -15,7 +15,6 @@ import datetime
 import scipy as sp
 from sklearn import linear_model
 
-runcheck = __import__('mzn-runcheck')
 cwd=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(cwd,'scripts'))
 from checker import *
@@ -112,81 +111,6 @@ def qflatten(L):
     R = []
     _qflatten(L,R.append,(list,tuple,np.ndarray))
     return np.array(R)
-
-
-## the prototype to run
-# f_instances: list of instance files (e.g. from same load)
-# day: day the first instance corresponds to
-# dat: prediction data
-# args: optional dict of argument options
-def run(f_instances, day, dat, args=None):
-    tmpdir = ""
-    if args.tmp:
-        tmpdir = args.tmp
-        os.mkdir(args.tmp)
-    else:
-        tmpdir = tempfile.mkdtemp()
-
-    ##### data stuff
-    # load train/test data
-    column_features = [ 'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'ForecastWindProduction', 'SystemLoadEA', 'SMPEA' ]; # within the same day you can use all except: ActualWindProduction, SystemLoadEP2, SMPEP2
-          # I ommitted ORKTemperature and ORKWindspeed because it contains 'NaN' missing values (deal with it if you want to use those features), also CO2Intensity sometimes
-    column_predict = 'SMPEP2'
-    historic_days = 30
-
-    preds = [] # [(model_name, predictions)]
-
-    # features, learning and predictions
-    rows_prev = get_data_prevdays(dat, day, timedelta(args.historic_days))
-    X_train = [ [eval(v) for (k,v) in row.iteritems() if k in column_features] for row in rows_prev]
-    y_train = [ eval(row[column_predict]) for row in rows_prev ]
-
-    clf = linear_model.LinearRegression()
-    clf.fit(X_train, y_train)
-
-    preds = [] # per day an array containing a prediction for each PeriodOfDay
-    actuals = [] # also per day
-    days = []
-    for (i,f) in enumerate(f_instances):
-        today = day + timedelta(i)
-        rows_tod = get_data_day(dat, today)
-        X_test = [ [eval(v) for (k,v) in row.iteritems() if k in column_features] for row in rows_tod]
-        y_test = [ eval(row[column_predict]) for row in rows_tod ]
-        preds.append( clf.predict(X_test) )
-        actuals.append( y_test )
-        days.append( today )
-    if args.v >= 1:
-        #print preds, actuals
-        print "Plotting actuals vs predictions..."
-        plot_preds( [('me',qflatten(preds))], qflatten(actuals) )
-
-    # the scheduling
-    triples = [] # the results: [('load1/day01.txt', '2012-02-01', InstanceObject), ...]
-    for (i,f) in enumerate(f_instances):
-        data_forecasts = preds[i]
-        data_actual = actuals[i]
-        (timing, out) = runcheck.mzn_run(args.file_mzn, f, data_forecasts,
-                                tmpdir, mzn_dir=args.mzn_dir,
-                                print_output=args.print_output,
-                                verbose=args.v-1)
-        instance = runcheck.mzn_toInstance(f, out, data_forecasts,
-                                  data_actual=data_actual,
-                                  pretty_print=args.print_pretty,
-                                  verbose=args.v-1)
-        triples.append( (f, str(days[i]), instance) )
-        if args.v >= 1:
-            # csv print:
-            if i == 0:
-                # an ugly hack, print more suited header here
-                print "scheduling_scenario; date; cost_forecast; cost_actual; runtime"
-            today = day + timedelta(i)
-            chkmzn.print_instance_csv(f, today.__str__(), instance, timing=timing, header=False)
-
-    return triples
-
-    if not args.tmp_keep:
-        shutil.rmtree(tmpdir)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run and check a MZN model in ICON challenge data")
