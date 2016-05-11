@@ -13,21 +13,20 @@ import time as ttime
 import glob
 import datetime
 import scipy as sp
+from sklearn import linear_model
 
 runcheck = __import__('mzn-runcheck')
 cwd=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(cwd,'scripts'))
 from checker import *
-import instance2dzn as i2dzn
-import forecast2dzn as f2dzn
-import checker_mzn as chkmzn
 from prices_data import *
 from prices_regress import *
 import numpy as np
-# if you don't have sklearn installed, here is a tip from Lieven Paulissen for windows users: "I installed the python wheels using the pip command, especially numpy and matplotlib, from here: http://www.lfd.uci.edu/~gohlke/pythonlibs."
-from sklearn import linear_model
 
-def run_adapted(f_instances, start_day, dat, args):
+from tomdaancode.compute_actual_cost_of_day import *
+
+
+def run_adapted(f_instances, start_day, dat, args=None):
     """
     @param f_instances: list of instance files (e.g. from same load)
     @param start_day: day the first instance corresponds to
@@ -52,19 +51,18 @@ def run_adapted(f_instances, start_day, dat, args):
     init_param = np.append(cls.coef_, [cls.intercept_])
     print("[INIT] weights: %s" % init_param)
     
-    price_prediction_plot(f_instances, dat, cls, column_features, column_predict)
+    # price_prediction_plot(f_instances, dat, cls, column_features, column_predict)
 
     # adjust weights every day to optimize for daily load
     total_cost = 0
     for (i,tasks) in enumerate(f_instances):
-        
         # train on yesterdays forecast with todays tasks
         X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
         updated_weights = train_daily_weights(X_train, y_train, tasks, init_param, args)
         
         # test today
         X_test, y_test = get_daily_data(start_day, dat, i, column_features, column_predict)
-        total_cost += evaluate_model(update_weights, X_test, y_test)
+        total_cost += evaluate_model(updated_weights, X_test, y_test, tasks, args)
 
     return total_cost
 
@@ -228,7 +226,7 @@ if __name__ == '__main__':
 
 
     time_start = ttime.time()
-    tot_act = run_adapted(f_instances, day, dat)
+    tot_act = run_adapted(f_instances, day, dat, args)
     runtime = (ttime.time() - time_start)
 
     '''
