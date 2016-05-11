@@ -28,24 +28,11 @@ import numpy as np
 
 
 def evaluate_model(weights,features,prices,tasks,args):
-    #print(features.shape)
     clf = linear_model.LinearRegression()
     clf.coef_ = weights[:-1]
     clf.intercept_ = weights[-1]
-    #print(clf.coef_.shape[1])
-    #print(clf.intercept_)
     forecasts = clf.predict(features)
-    #forecasts = []
-    #for i in size()
     return compute_actual_cost_of_day(forecasts,prices,tasks,args)
-
-def predict(weights,features):
-    coef = weights[:-1]
-    intercept = weights[-1]
-    res = intercept
-    for w,f in zip(coef,features):
-        res += w*f
-    return res
 
 
 def compute_actual_cost_of_day(forecasts,prices,tasks,args):
