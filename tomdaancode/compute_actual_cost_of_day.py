@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-MZNSOLUTIONBASENAME = "minizinc.out"
 
+MZNSOLUTIONBASENAME = "minizinc.out"
 import sys
 import os
 import shutil
@@ -12,9 +12,12 @@ import time as ttime
 import glob
 import datetime
 
+import sklearn.linear_model as linear_model
+import numpy as np
 runcheck = __import__('mzn-runcheck')
 cwd=os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(cwd,'../scripts'))
+
 from checker import *
 import instance2dzn as i2dzn
 import forecast2dzn as f2dzn
@@ -23,18 +26,6 @@ from prices_data import *
 from prices_regress import *
 import numpy as np
 
-# from http://code.activestate.com/recipes/577932-flatten-arraytuple/
-def _qflatten(L,a,I):
-    for x in L:
-        if isinstance(x,I): _qflatten(x,a,I)
-        else: a(x)
-def qflatten(L):
-    R = []
-    _qflatten(L,R.append,(list,tuple,np.ndarray))
-    return np.array(R)
-
-
-import sklearn.linear_model as linear_model
 
 def evaluate_model(weights,features,prices,tasks,args):
     clf = linear_model.LogisticRegression()
@@ -56,15 +47,15 @@ def compute_actual_cost_of_day(forecasts,prices,tasks,args):
     instance.compute_costs()
     return instance.day.cj_act
 
-
-
-
-
-
-
-
-
-
+# from http://code.activestate.com/recipes/577932-flatten-arraytuple/
+def _qflatten(L,a,I):
+    for x in L:
+        if isinstance(x,I): _qflatten(x,a,I)
+        else: a(x)
+def qflatten(L):
+    R = []
+    _qflatten(L,R.append,(list,tuple,np.ndarray))
+    return np.array(R)
 
 ## the prototype to run
 # f_instances: list of instance files (e.g. from same load)
@@ -78,6 +69,7 @@ def run(f_instances, day, dat, args=None):
         os.mkdir(args.tmp)
     else:
         tmpdir = tempfile.mkdtemp()
+        args.tmp = tmpdir
 
     ##### data stuff
     # load train/test data
@@ -95,7 +87,10 @@ def run(f_instances, day, dat, args=None):
 
     clf = linear_model.LinearRegression()
     clf.fit(X_train, y_train)
+    weights = np.append(clf.coef_,[clf.intercept_])
+    print(weights)
 
+    features  = []
     preds = [] # per day an array containing a prediction for each PeriodOfDay
     actuals = [] # also per day
     days = []
@@ -104,6 +99,7 @@ def run(f_instances, day, dat, args=None):
         rows_tod = get_data_day(dat, today)
         X_test = [ [eval(v) for (k,v) in row.iteritems() if k in column_features] for row in rows_tod]
         y_test = [ eval(row[column_predict]) for row in rows_tod ]
+        features.append(X_test)
         preds.append( clf.predict(X_test) )
         actuals.append( y_test )
         days.append( today )
@@ -115,11 +111,13 @@ def run(f_instances, day, dat, args=None):
     # the scheduling
     triples = [] # the results: [('load1/day01.txt', '2012-02-01', InstanceObject), ...]
     for (i,f) in enumerate(f_instances):
+        feat = features[i]
         data_forecasts = preds[i]
         data_actual = actuals[i]
 
+        y = evaluate_model(weights,feat[i],data_actual,f,args)
         x = compute_actual_cost_of_day(data_forecasts,data_actual,f,args)
-        print "Cost of day", i, x
+        print "Cost of day", i, x , y
 
 
 if __name__ == '__main__':

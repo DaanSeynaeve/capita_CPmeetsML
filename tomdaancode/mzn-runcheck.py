@@ -21,6 +21,7 @@ import forecast2dzn as f2dzn
 import checker_mzn as chkmzn
 
 def basename(fname):
+    name = os.path.basename(fname)
     return os.path.splitext(os.path.basename(fname))[0]
 
 # source: http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
