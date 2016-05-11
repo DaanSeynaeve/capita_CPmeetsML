@@ -28,11 +28,24 @@ import numpy as np
 
 
 def evaluate_model(weights,features,prices,tasks,args):
-    clf = linear_model.LogisticRegression()
+    #print(features.shape)
+    clf = linear_model.LinearRegression()
     clf.coef_ = weights[:-1]
     clf.intercept_ = weights[-1]
+    #print(clf.coef_.shape[1])
+    #print(clf.intercept_)
     forecasts = clf.predict(features)
+    #forecasts = []
+    #for i in size()
     return compute_actual_cost_of_day(forecasts,prices,tasks,args)
+
+def predict(weights,features):
+    coef = weights[:-1]
+    intercept = weights[-1]
+    res = intercept
+    for w,f in zip(coef,features):
+        res += w*f
+    return res
 
 
 def compute_actual_cost_of_day(forecasts,prices,tasks,args):
@@ -87,6 +100,8 @@ def run(f_instances, day, dat, args=None):
 
     clf = linear_model.LinearRegression()
     clf.fit(X_train, y_train)
+    #print(clf.coef_.shape[1])
+    #print(clf.intercept_)
     weights = np.append(clf.coef_,[clf.intercept_])
     print(weights)
 
@@ -112,10 +127,11 @@ def run(f_instances, day, dat, args=None):
     triples = [] # the results: [('load1/day01.txt', '2012-02-01', InstanceObject), ...]
     for (i,f) in enumerate(f_instances):
         feat = features[i]
+        #print(feat)
         data_forecasts = preds[i]
         data_actual = actuals[i]
 
-        y = evaluate_model(weights,feat[i],data_actual,f,args)
+        y = evaluate_model(weights,feat,data_actual,f,args)
         x = compute_actual_cost_of_day(data_forecasts,data_actual,f,args)
         print "Cost of day", i, x , y
 
