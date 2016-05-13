@@ -104,9 +104,9 @@ def train_daily_weights(X_train, y_train, tasks, weights, args):
         res = evaluate_model(w,X_train,y_train,tasks,args)
         print("hop: %s" % res)
         return res
-    x = np.random.rand(7)-.5
-    print("random: %s" % evaluate_model(x, X_train, y_train, tasks, args))
-    algo = opti.HillClimber(eval,x)
+    #x = np.random.rand(3)-.5
+    #print("random: %s" % evaluate_model(x, X_train, y_train, tasks, args))
+    algo = opti.HillClimber(eval,weights)
     algo.minimize = True
     algo.maxEvaluations = 10
     weights_new = algo.learn()[0]
