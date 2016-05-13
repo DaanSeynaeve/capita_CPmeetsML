@@ -1,0 +1,40 @@
+\documentclass{article}
+
+%opening
+\usepackage{fullpage}
+\usepackage{hyperref}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+%\usepackage{amsmath}
+\graphicspath{{plots/}}
+%\usepackage{listings}
+
+\title{Capita Selecta AI, module 4:\\ Integrating learning and scheduling for an energy-aware scheduling problem}
+\author{Tom Decroos \and Daan Seynaeve}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+	We present a way of integrating a sheduling problem and learning method by using a hill climber.
+	%abstract summary of your findings (1-2 paragraphs)
+\end{abstract}
+
+\section{Introduction}
+\section{Methods}
+\subsection{Data Preprocessing}
+%method (overview of scheduling approach,learning approach and their integration)
+
+\subsection{Learning approach}
+To estimate prices, we perform linear regression on the selected features discussed above. As such, the parameters of our estimation consist of a set of weights and an intercept. This intercept can be seen as just another weight that gets multiplied with a constant input of $1$. 
+
+\subsection{Integration}
+The learning regression serves as an initialization for our integration method, which iteratively tries to adapt the regression parameters to produce a more cost-efficient schedule. Since the actual energy prices for each day are not known at the time of scheduling, we cannot use them to evaluate generated schedules to select the best one.
+
+To overcome this problem, we introduce an assumption: the features values and actual prices of the day before the current day are representative for the current day with respect to the scheduling. We then pose the question: "what would have been the best possible model yesterday for the load of today". Since the actual prices of yesterday are known, they can be used to evaluate generated schedules. 
+
+\section{Experiments}
+%results and discussion (of interesting experiments you did
+\section{Conclusion}
+%conclusions and future work (if you had more time, you would investigate...); 
+\end{document}

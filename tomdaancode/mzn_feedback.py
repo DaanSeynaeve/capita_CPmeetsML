@@ -14,16 +14,18 @@ import glob
 import datetime
 import scipy as sp
 from sklearn import linear_model
+from pybrain import optimization as opti
 
 cwd=os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(cwd,'scripts'))
+sys.path.append(os.path.join(cwd,'../scripts'))
 from checker import *
 from prices_data import *
 from prices_regress import *
 import numpy as np
 
-from tomdaancode.compute_actual_cost_of_day import *
-
+from compute_actual_cost_of_day import *
+from fancypreproc import FancyModel
+from matplotlib import pyplot as plt
 
 def run_adapted(f_instances, start_day, dat, args=None):
     """
@@ -32,11 +34,20 @@ def run_adapted(f_instances, start_day, dat, args=None):
     @param dat: prediction data
     @param args: optional dict of argument options
     """
+    tmpdir = ""
+    if args.tmp:
+        tmpdir = args.tmp
+        os.mkdir(args.tmp)
+    else:
+        tmpdir = tempfile.mkdtemp()
+        args.tmp = tmpdir
 
     # omitted: ORKTemperature, ORKWindspeed
     # forbidden: ActualWindProduction, SystemLoadEP2, SMPEP2
-    column_features = [ 'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'ForecastWindProduction', 'SystemLoadEA', 'SMPEA' ];
+    # column_features = [ 'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'ForecastWindProduction', 'SystemLoadEA', 'SMPEA' ];
+    column_features = [ 'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'SystemLoadEA', 'SMPEA' ];
     column_predict = 'SMPEP2'
+    
     historic_days = 30
 
     # initialization: linear regression
@@ -50,11 +61,20 @@ def run_adapted(f_instances, start_day, dat, args=None):
     init_param = np.append(cls.coef_, [cls.intercept_])
     print("[INIT] weights: %s" % init_param)
     
-    # price_prediction_plot(f_instances, dat, cls, column_features, column_predict)
-
+    fm = FancyModel()
+    fm.fit(X_train, y_train)
+    
+    print(np.size(y_train)/48)
+    fig = plt.figure()
+    plt.hist(np.array(y_train), bins=100)
+    plt.show()
+    
     # adjust weights every day to optimize for daily load
     total_cost = 0
     for (i,tasks) in enumerate(f_instances):
+        # plot price predictions
+        price_prediction_plot((tasks), dat, cls, column_features, column_predict)
+        
         # train on yesterdays forecast with todays tasks
         X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
         updated_weights = train_daily_weights(X_train, y_train, tasks, init_param, args)
@@ -76,9 +96,21 @@ def get_daily_data(start_day, dat, offset, column_features, column_predict):
     return X, y
 
 def train_daily_weights(X_train, y_train, tasks, weights, args):
-    eval = lambda w: evaluate_model(w,X_train,y_train,tasks,args)
-    return sp.optimize.basinhopping(eval,weights,niter=10)
-
+    print("a new day of hopping...")
+    print("start: %s" % evaluate_model(weights, X_train, y_train, tasks, args))
+    def eval(w):
+        res = evaluate_model(w,X_train,y_train,tasks,args)
+        print("hop: %s" % res)
+        return res
+    x = np.random.rand(7)-.5
+    print("random: %s" % evaluate_model(x, X_train, y_train, tasks, args))
+    algo = opti.HillClimber(eval,x)
+    algo.minimize = True
+    algo.maxEvaluations = 10
+    weights_new = algo.learn()[0]
+    print("stop: %s" % evaluate_model(weights_new, X_train, y_train, tasks, args))
+    return weights_new
+    
 def price_prediction_plot(f_instances, dat, model, column_features, column_predict):
     preds = [] # per day an array containing a prediction for each PeriodOfDay
     actuals = [] # also per day
@@ -138,7 +170,7 @@ if __name__ == '__main__':
         f_instances = sorted(glob.glob(globpatt))
 
     # data instance prepping
-    datafile = 'data/prices2013.dat';
+    datafile = '../data/prices2013alt.dat';
     dat = load_prices(datafile)
     day = None
     if args.day:
