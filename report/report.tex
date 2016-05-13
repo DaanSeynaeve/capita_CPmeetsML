@@ -58,12 +58,7 @@ To estimate prices, we perform linear regression on the selected features discus
 \subsection{Integration}
 The learning regression serves as an initialization for our integration method, which iteratively tries to adapt the regression parameters to produce a more cost-efficient schedule. Since the actual energy prices for each day are not known at the time of scheduling, we cannot use them to evaluate generated schedules to select the best one.
 
-To overcome this problem, we introduce an assumption: the features values and actual prices of the day before the current day are representative for the current day with respect to the scheduling. We then pose the question: "what would yesterday have been the best possible model for the load of today".
-
-
-Since the actual prices of the day before are known, they can be used to evaluate generated schedules.
-
-To optimize the total cost, we  
+To overcome this problem, we introduce an assumption: the features values and actual prices of the day before the current day are representative for the current day with respect to the scheduling. We then pose the question: "what would yesterday have been the best possible model for the load of today". We answer this question by searching locally for a set of weights that result in a schedule that minimizes the total cost.
 
 \section{Experiments}
 %results and discussion (of interesting experiments you did

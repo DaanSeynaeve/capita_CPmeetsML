@@ -28,12 +28,12 @@ from fancypreproc import FancyModel
 from matplotlib import pyplot as plt
 
 def run_adapted(f_instances, start_day, dat, args=None):
-    """
+    '''
     @param f_instances: list of instance files (e.g. from same load)
     @param start_day: day the first instance corresponds to
     @param dat: prediction data
     @param args: optional dict of argument options
-    """
+    '''
     tmpdir = ""
     if args.tmp:
         tmpdir = args.tmp
@@ -45,7 +45,7 @@ def run_adapted(f_instances, start_day, dat, args=None):
     # omitted: ORKTemperature, ORKWindspeed
     # forbidden: ActualWindProduction, SystemLoadEP2, SMPEP2
     # column_features = [ 'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'ForecastWindProduction', 'SystemLoadEA', 'SMPEA' ];
-    column_features = [ 'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'SystemLoadEA', 'SMPEA' ];
+    column_features = [ 'SystemLoadEA', 'SMPEA' ];
     column_predict = 'SMPEP2'
     
     historic_days = 30
@@ -172,7 +172,7 @@ if __name__ == '__main__':
         f_instances = sorted(glob.glob(globpatt))
 
     # data instance prepping
-    datafile = '../data/prices2013alt.dat';
+    datafile = '../data/newprices2013.dat';
     dat = load_prices(datafile)
     day = None
     if args.day:
