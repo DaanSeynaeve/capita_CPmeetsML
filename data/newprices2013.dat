@@ -1,4 +1,4 @@
-#"DateTime" "Holiday" "HolidayFlag" "DayOfWeek" "WeekOfYear" "Day" "Month" "Year" "PeriodOfDay" "ForecastWindProduction" "SystemLoadEA" "SMPEA" "ORKTemperature" "ORKWindspeed" "CO2Intensity" "ActualWindProduction" "SystemLoadEP2" "SMPEP2" "PeriodsToPeak"
+#DateTime Holiday HolidayFlag DayOfWeek WeekOfYear Day Month Year PeriodOfDay ForecastWindProduction SystemLoadEA SMPEA ORKTemperature ORKWindspeed CO2Intensity ActualWindProduction SystemLoadEP2 SMPEP2 PeriodToPeak
 "1" "tue 1/11/2011 00:00" "" 0 1 44 1 11 2011 0 315.31 3388.77 49.26 6 9.3 600.71 356 3159.6 54.32 12
 "2" "tue 1/11/2011 00:30" "" 0 1 44 1 11 2011 1 321.8 3196.66 49.26 6 11.1 605.42 317 2973.01 54.23 13
 "3" "tue 1/11/2011 01:00" "" 0 1 44 1 11 2011 2 328.57 3060.71 49.1 5 11.1 589.97 311 2834 54.23 14
