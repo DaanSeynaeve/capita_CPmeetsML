@@ -1,0 +1,61 @@
+\documentclass{article}
+
+%opening
+%\usepackage{fullpage}
+\usepackage{hyperref}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+%\usepackage{amsmath}
+\graphicspath{{plots/}}
+%\usepackage{listings}
+
+\title{Capita Selecta AI, module 4:\\ Integrating learning and scheduling for an energy-aware scheduling problem}
+\author{Tom Decroos \and Daan Seynaeve}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+	%abstract summary of your findings (1-2 paragraphs)
+\end{abstract}
+\section{Methods}
+%method (overview of scheduling approach,learning approach and their integration)
+\subsection{Scheduling approach}
+
+\subsection{Feature selection}
+Before training a linear regression model, we first checked the relevance of each feature. The following output from a simple R-script shows the correlation coefficient of all available features.
+\begin{verbatim}
+> cor(features,prices$SMPEP,use='complete.obs')
+prices.HolidayFlag            -0.001837929
+prices.WeekOfYear             -0.015813567
+prices.DayOfWeek              -0.069624872
+prices.PeriodOfDay             0.323490486
+prices.ForecastWindProduction -0.079638880
+prices.SystemLoadEA            0.491096357
+prices.SMPEA                   0.618158287
+prices.ORKTemperature         -0.009086615
+prices.ORKWindspeed           -0.035435662
+prices.CO2Intensity           -0.035055080
+\end{verbatim}
+We can see that there are only 3 relevant features for predicting prices: \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodOfDay|. The relation between the first two features and the actual price of electricity is obvious. The relation between \verb|PeriodOfDay| and the actual price is less obvious however. We investigated this further and plotted the average price for each period of the day (Figure \ref{fig:timeslot_average}).
+
+\begin{figure}
+	\centering
+	\includegraphics[width=.8\textwidth]{timeslot_averageprice.pdf}
+	\caption{The average price during the day, measured per half hour.}
+	\label{fig:timeslot_average}
+\end{figure}
+
+We can see a clear peak of price of energy at 18h00. This makes sense intuivitely. The energy consumption of consumers is the highest at that time and the energy market follows the simple principles of supply and demand. To make the relation between \verb|PeriodOfDay| and the actual price more linear, we transform it to a new feature \verb|PeriodsToPeak|. This new feature is the number of periods between the current period and the peak at 18h00. At 10h00 in the morning for example, the \verb|PeriodsToPeak| value is 16. This new feature achieves a better correlation with the actual price than just the raw period of the day.
+\begin{verbatim}
+prices.PeriodsToPeak          -0.413861750
+\end{verbatim}
+In conclusion, our linear regression model uses the following three features: \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodstoPeak|.
+
+\subsection{Integration}
+
+\section{Experiments}
+%results and discussion (of interesting experiments you did
+\section{Conclusion}
+%conclusions and future work (if you had more time, you would investigate...); 
+\end{document}
