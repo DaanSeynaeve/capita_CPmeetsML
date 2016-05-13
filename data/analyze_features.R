@@ -1,6 +1,8 @@
 prices = read.table(file = 'prices2013.dat',header=T)
 
 prices$PeriodsToPeak = abs(((prices$PeriodOfDay-12)%%48)-24)
+
+write.table(prices,file='newprices2013.dat')
 #extra10h = abs(((prices$PeriodOfDay-4)%%48)-24)
 features = data.frame(prices$PeriodsToPeak,prices$HolidayFlag,prices$WeekOfYear,prices$DayOfWeek,prices$PeriodOfDay,prices$ForecastWindProduction,prices$SystemLoadEA,prices$SMPEA,prices$ORKTemperature,prices$ORKWindspeed,prices$CO2Intensity)
 y = prices$SMPEP2
