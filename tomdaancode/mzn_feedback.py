@@ -61,6 +61,7 @@ def run_adapted(f_instances, start_day, dat, args=None):
     init_param = np.append(cls.coef_, [cls.intercept_])
     print("[INIT] weights: %s" % init_param)
     
+    '''
     fm = FancyModel()
     fm.fit(X_train, y_train)
     
@@ -68,12 +69,13 @@ def run_adapted(f_instances, start_day, dat, args=None):
     fig = plt.figure()
     plt.hist(np.array(y_train), bins=100)
     plt.show()
+    '''
     
     # adjust weights every day to optimize for daily load
     total_cost = 0
     for (i,tasks) in enumerate(f_instances):
         # plot price predictions
-        price_prediction_plot((tasks), dat, cls, column_features, column_predict)
+        # price_prediction_plot((tasks), dat, cls, column_features, column_predict)
         
         # train on yesterdays forecast with todays tasks
         X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
