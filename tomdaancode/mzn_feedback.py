@@ -13,6 +13,7 @@ import time as ttime
 import glob
 import datetime
 import scipy as sp
+import time as t
 from sklearn import linear_model
 from pybrain import optimization as opti
 
@@ -78,30 +79,41 @@ def run_adapted(f_instances, start_day, dat, args=None):
 
     # adjust weights every day to optimize for daily load
     total_cost = 0
+    cost = 0
     total_nohop_cost = 0
     total_cost_proto = 0
+    cost_proto = 0
     total_optimal_cost = 0
     for (i,tasks) in enumerate(f_instances):
         # plot price predictions
         # price_prediction_plot((tasks), dat, cls, column_features, column_predict)
 
         # train on yesterdays forecast with todays tasks
-        X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
-        updated_weights = train_daily_weights(X_train, y_train, tasks, init_param, args)
+        #X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
+        #updated_weights = train_daily_weights(X_train, y_train, tasks, init_param, args)
 
         # test today
         X_test, y_test = get_daily_data(start_day, dat, i, column_features, column_predict)
-        cost = evaluate_model(updated_weights, X_test, y_test, tasks, args)
+        #cost = evaluate_model(updated_weights, X_test, y_test, tasks, args)
         #print "cost:", cost
+        start = t.time()
         nohop_cost = evaluate_model(init_param, X_test, y_test, tasks, args)
         #print "nohop cost:", nohop_cost
+        end = t.time()
+        print "Time for nohop run:", end-start, 'seconds'
 
         X_test, y_test = get_daily_data(start_day, dat, i, column_features_proto, column_predict)
-        cost_proto = evaluate_model(param_proto,X_test, y_test, tasks, args)
+        #start = t.time()
+        #cost_proto = evaluate_model(param_proto,X_test, y_test, tasks, args)
+        #end = t.time()
+        #print "Time for prototype run:", end-start, 'seconds'
         #print "hop improvement:", (cost-cost_proto)/cost_proto
         #print "nohop improvement:", (nohop_cost-cost_proto)/cost_proto
 
+        start = t.time()
         optimal_cost = compute_actual_cost_of_day(y_test,y_test,tasks,args)
+        end = t.time()
+        print "Time for optimal run:", end-start, 'seconds'
 
         total_cost += cost
         total_nohop_cost += nohop_cost
@@ -130,8 +142,11 @@ def train_daily_weights(X_train, y_train, tasks, weights, args):
     #print("a new day of hopping...")
     #print("start: %s" % evaluate_model(weights, X_train, y_train, tasks, args))
     def eval(w):
+        start = t.time()
         res = evaluate_model(w,X_train,y_train,tasks,args)
         #print("hop: %s" % res)
+        end = t.time()
+        print "Time for 1 run:", end-start, 'seconds'
         return res
     #x = np.random.rand(3)-.5
     #print("random: %s" % evaluate_model(x, X_train, y_train, tasks, args))
