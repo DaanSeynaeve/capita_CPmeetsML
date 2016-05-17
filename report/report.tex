@@ -17,13 +17,13 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-	We introduce a method to integrate price forecasts into an energy scheduling problem. Rather than focussing on accurate price predictions, we directly minimize the cost of the resulting scheduling. We present results that show that our approach, which is a relatively simple way of optimizing the pipeline in a holistic way, does not perform better than linear regression on features selected in a sensible way.
+	We introduce a method to integrate price forecasts into an energy scheduling problem. Rather than focussing on accurate price predictions, we attempt to directly minimize the cost of the resulting scheduling. We present results that show that our approach, which is a relatively simple way of optimizing the pipeline in a holistic way, does not perform better than linear regression on features selected in a sensible way.
 	%abstract summary of your findings (1-2 paragraphs)
 \end{abstract}
-\section{Methods}
+\section{Methodology}
 %method (overview of scheduling approach,learning approach and their integration)
 \subsection{Scheduling approach}
-To perform the scheduling, we have have used MiniZinc.
+To perform the scheduling, we have used MiniZinc. MiniZinc is a medium-level constraint modelling language. It is high-level enough to express most constraint problems easily, but low-level enough that it can be mapped onto existing solvers easily and consistently. \footnote{http://www.minizinc.org/}
 
 \subsection{Feature selection}
 Before training a linear regression model, we first checked the relevance of each feature. The following output from a simple R-script shows the correlation coefficient of all available features.
@@ -44,7 +44,7 @@ We can see that there are only three relevant features for predicting prices: \v
 
 \begin{figure}
 	\centering
-	\includegraphics[width=.7\textwidth]{img/timeslot_averageprice.pdf}
+	\includegraphics[width=\textwidth]{img/timeslot_averageprice.pdf}
 	\caption{The average price during the day, measured per half hour.}
 	\label{fig:timeslot_average}
 \end{figure}
@@ -62,18 +62,22 @@ To estimate prices, we perform linear regression on the selected features discus
 
 \begin{figure}
 	\centering
-	\includegraphics[width=.9\textwidth]{img/feedback.pdf}
+	\includegraphics[width=\textwidth]{img/feedback.pdf}
 	\caption{Difference between the prototype (top) and our integrated approach (bottom).}
 	\label{fig:feedback}
 \end{figure}
 
-We have integrated the learning and scheduling phase by iteratively adapting the regression parameters to produce a more cost-efficient schedule. This is different from the standard approach, where the regression parameters are chosen to estimate the actual prices as closely as possible. A schematic overview of this can be seen in figure \ref{fig:feedback}. However, a better price estimate may not necessarily result in a better schedule\cite{ifrim2012properties}.
+The prototype chooses its regression parameters, such that its forecasted prices are as close as possible to the actual prices. However, a better price estimate may not necessarily result in a better schedule\cite{ifrim2012properties}. We have integrated the learning and scheduling phase by iteratively adapting the regression parameters to produce a more cost-efficient schedule. A schematic overview of both approaches can be seen in Figure \ref{fig:feedback}.
 
-Since the actual energy prices for each day are not known at the time of scheduling, we cannot use them to evaluate generated schedules to select the best one. To overcome this problem, we introduce an assumption: the feature values and actual prices of the day before the current day are representative for the current day with respect to the scheduling. We then pose the question: "what would yesterday have been the best possible model for the load of today". We answer this question by searching locally for weights that result in a schedule which minimizes the total cost. To perform this search, we use a hill climber. The hill climber is initialized with weights learned from performing ordinary least-squares on a set of history days (by default 30). During each iteration, the weights are modified and a new schedule is generated using MiniZinc. Note that, while the constraint problem solved corresponds to the load \emph{of the current day}, the feature values \emph{of the day before} are used during the training. The resulting schedule is then evaluated with the actual price of the day before. 
+Since the actual energy prices for each day are not known at the time of scheduling, we cannot use them to evaluate generated schedules and select the best one. To overcome this problem, we introduce an assumption: the feature values and actual prices of the day before the current day are representative for the current day with respect to the scheduling. We then pose the question: "What would have been the best possible model for the load of today and the actual prices of yesterday?".
+
+We answer this question by searching locally for weights that result in a schedule which minimizes the total cost. To perform this search, we use a hill climber. The hill climber is initialized with weights learned from performing ordinary least-squares on a set of history days (by default 30). During each iteration, the weights are modified and a new schedule is generated using MiniZinc. Note that, while the constraint problem solved corresponds to the load of the current day, the feature values of the day before are used during the training. The resulting schedule is then evaluated with the actual prices of the day before. If the schedule was better, the (mutated) weights of the linear regression are stored and kept as the new starting vector for the hill climber.
+
+Finally, the best performing weights are used to generate a schedule for today with today's features.
 
 \section{Experiments}
 %results and discussion (of interesting experiments you did
-Table \ref{tab:results} shows results for the prototype, a linear regression model using only \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodstoPeak|, and our model that trains a set of weights on the previous day (we try 10 and 100 random weight mutations per day). We do not report execution times because the time needed to execute our python scripts is negligible compared to the execution time of minizinc optimizing the constraint problem for forecasted prices. It takes about 1.5 seconds to generate a schedule for a day from load1, but the execution time quickly rises when using different loads. A day from load4 for example takes $\pm 10$ seconds to schedule and a day from load8 takes $\pm 80$ seconds to schedule. Because of our limited computing resources, days from load8 are only scheduled by our basic linear regression model and not our full pipeline with the feedback loop.
+Table \ref{tab:results} shows results for the prototype, a linear regression model using only \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodstoPeak|, and our model that trains a set of weights on the previous day (we gave its training phase 10 random weight mutations per day). We do not report execution times because the time needed to execute our python scripts is negligible compared to the execution time of minizinc optimizing the constraint problem for forecasted prices. It takes about 1.5 seconds to generate a schedule for a day from load1, but the execution time quickly rises when using different loads. A day from load4 for example takes $\pm 10$ seconds to schedule and a day from load8 takes $\pm 80$ seconds to schedule. Because of our limited computing resources, days from load8 are only scheduled by our basic linear regression model and not our full pipeline with the feedback loop.
 
 \begin{table}
 	\begin{tabular}{llrrrrr}
@@ -90,7 +94,8 @@ Table \ref{tab:results} shows results for the prototype, a linear regression mod
 	\caption{The performance of our models compared to the performance of the prototype and the optimal schedule for different combinations of loads and starting days.}
 	\label{tab:results}
 \end{table}
-Our basic linear regression model has comparable results to the prototype and our full pipeline is a bit worse. We can conclude that when dealing with limited computing resources, it is probably better to focus on accurate price predictions. A simple attempt at optimizing the full pipeline actually gave worse results and takes a very long time to train. 
+Our basic linear regression model has comparable results to the prototype and our full pipeline is a bit worse. For \textbf{load1}, we also tried giving our full pipeline 100 mutations in its training stage, but this gave even worse results.
+We can conclude that when dealing with limited computing resources, it is probably better to focus on accurate price predictions. A simple attempt at optimizing the full pipeline actually gave worse results and takes a very long time to train. 
 
 
 \section{Conclusion}
@@ -100,9 +105,9 @@ Our basic linear regression model has comparable results to the prototype and ou
 
 A simple analysis of the energy price data indicated that there are only three relevant features. One of these features: \verb+PeriodOfDay+, has been transformed into a new feature \verb+PeriodsToPeak+ which is more correlated to the actual price. A linear regression model trained using only these three features performs comparable to the prototypical approach that uses all available features.
 
-We have furthermore introduced an approach that uses local search to closely integrate the learning and scheduling phases. Instead of approximating the actual price of each day, our approach directly minimizes the total cost of the resulting schedules. Our experiments show that this approach is not really advantageous over using simple linear regression. If this approach were to be adopted in practice, we suggest minimizing the schedule cost for more than one day and replacing the MiniZinc scheduler with a heuristic method during training time. 
+We have furthermore introduced an approach that uses local search to closely integrate the learning and scheduling phases. Instead of approximating the actual price of each day, our approach attempts to directly minimize the total cost of the resulting schedules. Our experiments show that this approach is not really advantageous over using simple linear regression. If this approach were to be adopted in practice, we suggest minimizing the schedule cost for more than one day and replacing the MiniZinc scheduler with a heuristic method during training time. 
 
 \bibliographystyle{plain}
-\bibliography{references.bib}
+\bibliography{references}
 
 \end{document}
