@@ -62,7 +62,7 @@ To overcome this problem, we introduce an assumption: the features values and ac
 
 \section{Experiments}
 %results and discussion (of interesting experiments you did
-Table \ref{tab:results} shows results for the prototype, a linear regression model using only \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodstoPeak|, and our model that trains a set of weights on the previous day (we try 10 and 100 random weight mutations per day). We do not report execution times because the time needed to execute our python scripts is negligible compared to the execution time of minizinc optimizing the constraint problem for forecasted prices. It takes about 1.5 seconds to generate a schedule for a day from load1, but the execution time quickly rises when using different loads. A day from load4 for example takes $\pm 10$ seconds to schedule and a day from load8 takes $\pm 90$ seconds to schedule. Because of our limited computing resources, days from load8 are only scheduled by our basic linear regression model and not our full pipeline with the feedback loop.
+Table \ref{tab:results} shows results for the prototype, a linear regression model using only \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodstoPeak|, and our model that trains a set of weights on the previous day (we try 10 and 100 random weight mutations per day). We do not report execution times because the time needed to execute our python scripts is negligible compared to the execution time of minizinc optimizing the constraint problem for forecasted prices. It takes about 1.5 seconds to generate a schedule for a day from load1, but the execution time quickly rises when using different loads. A day from load4 for example takes $\pm 10$ seconds to schedule and a day from load8 takes $\pm 80$ seconds to schedule. Because of our limited computing resources, days from load8 are only scheduled by our basic linear regression model and not our full pipeline with the feedback loop.
 
 \begin{table}
 	\begin{tabular}{lllllr}
@@ -71,10 +71,10 @@ Table \ref{tab:results} shows results for the prototype, a linear regression mod
 		2013-05-01 & load1 & 21,534,652& 21,961,676 & 22,022,949 & 22,544,988\\
 		2013-08-01 & load1 & 23,052,956& 23,325,484 & 23,310,270 & 23,399,398\\
 		2013-11-01 & load1 & 23,782,343& 24,358,360 & 24,360,228 & 24,347,961\\
-		2013-02-01 & load8 & x& 61,833,570 & x & N/A\\
-		2013-05-01 & load8 & x& 67,003,304 & x & N/A\\
-		2013-08-01 & load8 & x& 68,446,485 & x & N/A\\
-		2013-11-01 & load8 & x& 64,945,087 & x & N/A\\
+		2013-02-01 & load8 & 61,086,428& 61,833,570 & 61,934,179 & N/A\\
+		2013-05-01 & load8 & N/A& 67,003,304 & N/A & N/A\\
+		2013-08-01 & load8 & 67,099,809& 68,446,485 & 68,578,054 & N/A\\
+		2013-11-01 & load8 & 63,382,664& 64,945,087 & 65,195,216 & N/A\\
 	\end{tabular}
 	\caption{The performance of our models compared to the performance of the prototype and the optimal schedule for different combinations of loads and starting days.}
 	\label{tab:results}
