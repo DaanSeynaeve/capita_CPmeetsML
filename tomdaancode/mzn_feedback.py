@@ -28,6 +28,8 @@ from compute_actual_cost_of_day import *
 from fancypreproc import FancyModel
 from matplotlib import pyplot as plt
 
+dirty_global = 0
+
 def run_adapted(f_instances, start_day, dat, args=None):
     '''
     @param f_instances: list of instance files (e.g. from same load)
@@ -89,23 +91,22 @@ def run_adapted(f_instances, start_day, dat, args=None):
         # price_prediction_plot((tasks), dat, cls, column_features, column_predict)
 
         # train on yesterdays forecast with todays tasks
-        #X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
-        #updated_weights = train_daily_weights(X_train, y_train, tasks, init_param, args)
+        X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
+        updated_weights = train_daily_weights(X_train, y_train, tasks, init_param, args)
 
         # test today
         X_test, y_test = get_daily_data(start_day, dat, i, column_features, column_predict)
-        #cost = evaluate_model(updated_weights, X_test, y_test, tasks, args)
-        #print "cost:", cost
+        cost = evaluate_model(updated_weights, X_test, y_test, tasks, args)
+        print "cost:", cost
         start = t.time()
         nohop_cost = evaluate_model(init_param, X_test, y_test, tasks, args)
-        #print "nohop cost:", nohop_cost
+        print "nohop cost:", nohop_cost
         end = t.time()
         print "Time for nohop run:", end-start, 'seconds'
 
         X_test, y_test = get_daily_data(start_day, dat, i, column_features_proto, column_predict)
-        #start = t.time()
-        #cost_proto = evaluate_model(param_proto,X_test, y_test, tasks, args)
-        #end = t.time()
+        cost_proto = evaluate_model(param_proto,X_test, y_test, tasks, args)
+        
         #print "Time for prototype run:", end-start, 'seconds'
         #print "hop improvement:", (cost-cost_proto)/cost_proto
         #print "nohop improvement:", (nohop_cost-cost_proto)/cost_proto
@@ -139,20 +140,26 @@ def get_daily_data(start_day, dat, offset, column_features, column_predict):
     return X, y
 
 def train_daily_weights(X_train, y_train, tasks, weights, args):
+    global dirty_global
     #print("a new day of hopping...")
     #print("start: %s" % evaluate_model(weights, X_train, y_train, tasks, args))
+    dirty_global = 0
     def eval(w):
+        global dirty_global
         start = t.time()
         res = evaluate_model(w,X_train,y_train,tasks,args)
         #print("hop: %s" % res)
         end = t.time()
-        print "Time for 1 run:", end-start, 'seconds'
+        # print "Time for 1 run:", end-start, 'seconds'
+        if (dirty_global % 10 == 0):
+            print(dirty_global)
+        dirty_global = dirty_global + 1
         return res
     #x = np.random.rand(3)-.5
     #print("random: %s" % evaluate_model(x, X_train, y_train, tasks, args))
     algo = opti.HillClimber(eval,weights)
     algo.minimize = True
-    algo.maxEvaluations = 10
+    algo.maxEvaluations = 100
     weights_new = algo.learn()[0]
     #print("stop: %s" % evaluate_model(weights_new, X_train, y_train, tasks, args))
     return weights_new
