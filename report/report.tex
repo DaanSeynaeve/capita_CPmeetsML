@@ -16,12 +16,13 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-	We present an approach to integrate price forecasts into an energy scheduling problem. Rather than atte
+	We introduce a method to integrate price forecasts into an energy scheduling problem. Rather than focussing on accurate price  predictions, we directly minimize the cost of the resulting scheduling. We present results that show that our approach, which is a relatively simple way of optimizing the pipeline in a holistic way, does not perform better than linear regression on features selected in a sensible way.
 	%abstract summary of your findings (1-2 paragraphs)
 \end{abstract}
 \section{Methods}
 %method (overview of scheduling approach,learning approach and their integration)
 \subsection{Scheduling approach}
+To perform the scheduling, we have have used MiniZinc.
 
 \subsection{Feature selection}
 Before training a linear regression model, we first checked the relevance of each feature. The following output from a simple R-script shows the correlation coefficient of all available features.
@@ -98,7 +99,7 @@ Our basic linear regression model has comparable results to the prototype and ou
 
 A simple analysis of the energy price data indicated that there are only three relevant features. One of these features: \verb+PeriodOfDay+, has been transformed into a new feature \verb+PeriodsToPeak+ which is more correlated to the actual price. A linear regression model trained using only these three features performs comparable to the prototypical approach that uses all available features.
 
-We have furthermore introduced an approach that uses local search to closely integrate the learning and scheduling phases. Instead of approximating the actual price of each day, our approach directly minimizes the total cost of the resulting schedules. Our experiments show that this approach is not really advantegeous over using simple linear regression. If this approach were to be adopted in practice, we suggest replacing the MiniZinc model with a more heuristic estimation of the total cost during training time. 
+We have furthermore introduced an approach that uses local search to closely integrate the learning and scheduling phases. Instead of approximating the actual price of each day, our approach directly minimizes the total cost of the resulting schedules. Our experiments show that this approach is not really advantageous over using simple linear regression. If this approach were to be adopted in practice, we suggest minimizing the schedule cost for more than one day and replacing the MiniZinc scheduler with a heuristic method during training time. 
 
 \bibliographystyle{plain}
 \bibliography{references.bib}
