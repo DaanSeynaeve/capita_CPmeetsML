@@ -45,45 +45,74 @@ def run_adapted(f_instances, start_day, dat, args=None):
     # omitted: ORKTemperature, ORKWindspeed
     # forbidden: ActualWindProduction, SystemLoadEP2, SMPEP2
     # column_features = [ 'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'ForecastWindProduction', 'SystemLoadEA', 'SMPEA' ];
-    column_features = [ 'SystemLoadEA', 'SMPEA' ];
+    column_features = [ 'SystemLoadEA', 'SMPEA','PeriodToPeak']#,'HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'ForecastWindProduction']
+    column_features_proto = [ 'SystemLoadEA', 'SMPEA','HolidayFlag', 'DayOfWeek', 'PeriodOfDay', 'ForecastWindProduction']
     column_predict = 'SMPEP2'
-    
+
     historic_days = 30
 
     # initialization: linear regression
     print("[INIT] linear regression")
     rows_prev = get_data_prevdays(dat, day, timedelta(args.historic_days))
     X_train = [ [eval(v) for (k,v) in row.iteritems() if k in column_features] for row in rows_prev]
+    X_train_proto = [ [eval(v) for (k,v) in row.iteritems() if k in column_features_proto] for row in rows_prev]
     y_train = [ eval(row[column_predict]) for row in rows_prev ]
-    
+
     cls = linear_model.LinearRegression()
     cls.fit(X_train, y_train)
     init_param = np.append(cls.coef_, [cls.intercept_])
+    cls = linear_model.LinearRegression()
+    cls.fit(X_train_proto, y_train)
+    param_proto = np.append(cls.coef_, [cls.intercept_])
     print("[INIT] weights: %s" % init_param)
-    
+
     '''
     fm = FancyModel()
     fm.fit(X_train, y_train)
-    
+
     print(np.size(y_train)/48)
     fig = plt.figure()
     plt.hist(np.array(y_train), bins=100)
     plt.show()
     '''
-    
+
     # adjust weights every day to optimize for daily load
     total_cost = 0
+    total_nohop_cost = 0
+    total_cost_proto = 0
+    total_optimal_cost = 0
     for (i,tasks) in enumerate(f_instances):
         # plot price predictions
         # price_prediction_plot((tasks), dat, cls, column_features, column_predict)
-        
+
         # train on yesterdays forecast with todays tasks
         X_train, y_train = get_daily_data(start_day, dat, i-1, column_features, column_predict)
         updated_weights = train_daily_weights(X_train, y_train, tasks, init_param, args)
-        
+
         # test today
         X_test, y_test = get_daily_data(start_day, dat, i, column_features, column_predict)
-        total_cost += evaluate_model(updated_weights, X_test, y_test, tasks, args)
+        cost = evaluate_model(updated_weights, X_test, y_test, tasks, args)
+        #print "cost:", cost
+        nohop_cost = evaluate_model(init_param, X_test, y_test, tasks, args)
+        #print "nohop cost:", nohop_cost
+
+        X_test, y_test = get_daily_data(start_day, dat, i, column_features_proto, column_predict)
+        cost_proto = evaluate_model(param_proto,X_test, y_test, tasks, args)
+        #print "hop improvement:", (cost-cost_proto)/cost_proto
+        #print "nohop improvement:", (nohop_cost-cost_proto)/cost_proto
+
+        optimal_cost = compute_actual_cost_of_day(y_test,y_test,tasks,args)
+
+        total_cost += cost
+        total_nohop_cost += nohop_cost
+        total_cost_proto += cost_proto
+        total_optimal_cost += optimal_cost
+        print "day",i,"complete"
+
+    print "Total cost pipeline:", total_cost
+    print "Total cost nohop:", total_nohop_cost
+    print "Total cost prototype:", total_cost_proto
+    print "Total optimal cost:", total_optimal_cost
 
     return total_cost
 
@@ -98,21 +127,21 @@ def get_daily_data(start_day, dat, offset, column_features, column_predict):
     return X, y
 
 def train_daily_weights(X_train, y_train, tasks, weights, args):
-    print("a new day of hopping...")
-    print("start: %s" % evaluate_model(weights, X_train, y_train, tasks, args))
+    #print("a new day of hopping...")
+    #print("start: %s" % evaluate_model(weights, X_train, y_train, tasks, args))
     def eval(w):
         res = evaluate_model(w,X_train,y_train,tasks,args)
-        print("hop: %s" % res)
+        #print("hop: %s" % res)
         return res
-    x = np.random.rand(7)-.5
-    print("random: %s" % evaluate_model(x, X_train, y_train, tasks, args))
-    algo = opti.HillClimber(eval,x)
+    #x = np.random.rand(3)-.5
+    #print("random: %s" % evaluate_model(x, X_train, y_train, tasks, args))
+    algo = opti.HillClimber(eval,weights)
     algo.minimize = True
     algo.maxEvaluations = 10
     weights_new = algo.learn()[0]
-    print("stop: %s" % evaluate_model(weights_new, X_train, y_train, tasks, args))
+    #print("stop: %s" % evaluate_model(weights_new, X_train, y_train, tasks, args))
     return weights_new
-    
+
 def price_prediction_plot(f_instances, dat, model, column_features, column_predict):
     preds = [] # per day an array containing a prediction for each PeriodOfDay
     actuals = [] # also per day
@@ -126,12 +155,12 @@ def price_prediction_plot(f_instances, dat, model, column_features, column_predi
         preds.append( model.predict(X_test) )
         actuals.append( y_test )
         days.append( today )
-        
+
         #print preds, actuals
         print "Plotting actuals vs predictions..."
         plot_preds( [('me',qflatten(preds))], qflatten(actuals) )
-        
-        
+
+
 # ------------------------------------------------------------------------------
 # WARNING: DRAGONS BELOW
 # ------------------------------------------------------------------------------
