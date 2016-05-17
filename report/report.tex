@@ -62,6 +62,17 @@ To overcome this problem, we introduce an assumption: the features values and ac
 
 \section{Experiments}
 %results and discussion (of interesting experiments you did
+We show results for the prototype, a linear regression model using only \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodstoPeak|, and our model that trains a set of weights on the previous day (we try 10 random weight mutations per day). We do not report execution times because the time needed to execute our python scripts is negligible compared to the execution time of minizinc optimizing the constraint problem for forecasted prices.
+
+\begin{table}
+	\begin{tabular}{lllllr}
+		startday & load &optimal & prototype & lin reg & pipeline\\
+		2013-02-01 & load1 & 22,677,406& 22,955,395 & 22,906,306 & 22,907,791\\
+		2013-05-01 & load1 & 21,534,652& 21,961,676 & 22,022,949 & 22,544,988\\
+		2013-08-01 & load1 & 23,052,956& 23,325,484 & 23,310,270 & 23,399,398\\
+		2013-11-01 & load1 & 23,782,343& 24,358,360 & 24,360,228 & 24,347,961\\
+	\end{tabular}
+\end{table}
 \section{Conclusion}
 %conclusions and future work (if you had more time, you would investigate...); 
 \end{document}
