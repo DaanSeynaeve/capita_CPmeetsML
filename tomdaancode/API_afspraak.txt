@@ -1,7 +1,0 @@
-def compute_actual_cost_of_day(weights,features,prices,file_instance)
-""""
-weights [nb_of_features*1 nparray]: weights of the linear model used to predict prices.
-features [48*nb_of_features nparray]: features to predict prices with.
-prices [48*1 nparray]: the actual prices per half hour.
-tasks = String of filename
-""""

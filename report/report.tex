@@ -18,7 +18,7 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-	We introduce a method to integrate price forecasts into an energy scheduling problem. Rather than focussing on accurate price predictions, we attempt to directly minimize the cost of the resulting scheduling. We present results that show that our approach, which is a relatively simple way of optimizing the pipeline in a holistic way, does not perform better than linear regression on features selected in a sensible way.
+	We introduce a method to integrate price forecasts into an energy scheduling problem. Rather than focussing on accurate price predictions, we attempt to directly minimize the cost of the resulting schedule. We present results that show that our approach, which is a relatively simple way of optimizing the pipeline in a holistic way, does not perform better than linear regression on features selected in a sensible way.
 	%abstract summary of your findings (1-2 paragraphs)
 \end{abstract}
 \section{Methodology}
@@ -50,7 +50,7 @@ We can see that there are only three relevant features for predicting prices: \v
 	\label{fig:timeslot_average}
 \end{figure}
 
-We can see a clear peak of price of energy at 18h00. This makes sense intuivitely. The energy consumption of consumers is the highest at that time and the energy market follows the simple principles of supply and demand. To make the relation between \verb|PeriodOfDay| and the actual price more linear, we transform it to a new feature \verb|PeriodsToPeak|. This new feature is the number of periods between the current period and the peak at 18h00. At 10h00 in the morning for example, the \verb|PeriodsToPeak| value is 16. This new feature achieves a better correlation with the actual price than just the raw period of the day.
+We can see a clear peak in the price of energy at 18h00. This makes sense intuivitely. The energy consumption of consumers is the highest at that time and the energy market follows the simple principles of supply and demand. To make the relation between \verb|PeriodOfDay| and the actual price more linear, we transform it to a new feature \verb|PeriodsToPeak|. This new feature is the number of periods between the current period and the peak at 18h00. At 10h00 in the morning for example, the \verb|PeriodsToPeak| value is 16. This new feature achieves a better correlation with the actual price than just the raw period of the day.
 \begin{verbatim}
 prices.PeriodsToPeak          -0.413861750
 \end{verbatim}
@@ -81,6 +81,7 @@ Finally, the best performing weights are used to generate a schedule for today w
 Table \ref{tab:results} shows results for the prototype, a linear regression model using only \verb|SystemLoadEA|, \verb|SMPEA| and \verb|PeriodstoPeak|, and our model that trains a set of weights on the previous day (we gave its training phase 10 random weight mutations per day). We do not report execution times because the time needed to execute our python scripts is negligible compared to the execution time of minizinc optimizing the constraint problem for forecasted prices. It takes about 1.5 seconds to generate a schedule for a day from load1, but the execution time quickly rises when using different loads. A day from load4 for example takes $\pm 10$ seconds to schedule and a day from load8 takes $\pm 80$ seconds to schedule. Because of our limited computing resources, days from load8 are only scheduled by our basic linear regression model and not our full pipeline with the feedback loop.
 
 \begin{table}
+	\centering
 	\begin{tabular}{llrrrrr}
 		startday & load &optimal & prototype & lin reg & pipeline \\ \midrule
 		2013-02-01 & load1 & 22,677,406& 22,955,395 & 22,906,306 & 22,907,791\\
@@ -95,7 +96,7 @@ Table \ref{tab:results} shows results for the prototype, a linear regression mod
 	\caption{The performance of our models compared to the performance of the prototype and the optimal schedule for different combinations of loads and starting days.}
 	\label{tab:results}
 \end{table}
-Our basic linear regression model has comparable results to the prototype and our full pipeline is a bit worse. For \textbf{load1}, we also tried giving our full pipeline 100 mutations in its training stage, but this gave even worse results.
+Our basic linear regression model has comparable results to the prototype and our full pipeline is a bit worse. For load1, we also tried giving our full pipeline 100 mutations in its training stage, but this gave even worse results.
 We can conclude that when dealing with limited computing resources, it is probably better to focus on accurate price predictions. A simple attempt at optimizing the full pipeline actually gave worse results and takes a very long time to train. 
 
 
